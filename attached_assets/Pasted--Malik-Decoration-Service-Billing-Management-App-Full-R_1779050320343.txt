@@ -1,0 +1,616 @@
+# Malik Decoration Service — Billing Management App
+## Full Replit Build Specification
+
+> **Paste this entire file as your first message in Replit AI / Replit Agent. It contains every detail needed to build the exact app.**
+
+---
+
+## 1. Project Overview
+
+Build a **single-file HTML billing management application** for a decoration rental business. No backend, no database, no framework install needed — pure HTML + CSS + Vanilla JavaScript, with `localStorage` for persistence and `jsPDF` (via CDN) for PDF generation.
+
+**File to create:** `index.html`
+
+---
+
+## 2. Business Details
+
+| Field | Value |
+|---|---|
+| Business Name | MALIK DECORATION SERVICE |
+| Address | 13/1 Sector 5G, Saeedabad Baldia Town, Karachi |
+| App Title | Billing Management System |
+
+---
+
+## 3. Tech Stack
+
+- **HTML5** — single file (`index.html`)
+- **CSS** — embedded `<style>` block, no external CSS frameworks
+- **JavaScript** — embedded `<script>` block, Vanilla JS only
+- **jsPDF** — load via CDN:
+  ```html
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+  ```
+- **Storage:** `localStorage` (keys: `mds_items`, `mds_bills`, `mds_nextId`)
+- **Fonts:** Noto Nastaliq Urdu (for Urdu text rendering), system-ui fallback
+
+---
+
+## 4. CSS Design Tokens
+
+Use these CSS variables in `:root`:
+
+```css
+--bg: #f5f4f0;
+--surface: #ffffff;
+--surface2: #f9f8f5;
+--border: #e2e0d8;
+--border2: #d0cec4;
+--text: #1a1916;
+--text2: #6b6860;
+--text3: #9b998f;
+--accent: #c17f3a;
+--accent-light: #fdf3e7;
+--accent-dark: #a06828;
+--danger: #c0392b;
+--danger-light: #fdf0ee;
+--success: #2e7d32;
+--success-light: #f0f7f0;
+--info: #1565c0;
+--info-light: #e8f0fb;
+--r: 10px;
+--rsm: 6px;
+--font: 'Segoe UI', system-ui, sans-serif;
+```
+
+---
+
+## 5. Layout Structure
+
+```
+┌─────────────────────────────────────────────────────┐
+│  SIDEBAR (220px fixed left)  │  MAIN AREA (flex:1)  │
+│  ─ Logo + business name      │  ─ Topbar (56px)     │
+│  ─ Nav items                 │  ─ Content area      │
+│  ─ Footer address            │                      │
+└─────────────────────────────────────────────────────┘
+```
+
+### Sidebar
+- Background: `#1a1916` (dark)
+- Business name in `--accent` color (gold), bold, 13px
+- Sub label "Billing Management System" in muted white
+- 4 nav items with left-border active indicator (`--accent`)
+- Footer: address text in very muted white
+
+### Topbar
+- Background: white, border-bottom
+- Height: 56px
+- Title on left, action buttons on right
+- Position: sticky top
+
+### Content
+- Padding: 24px
+- Background: `--bg`
+
+---
+
+## 6. Navigation Pages
+
+| Page ID | Label | Icon char |
+|---|---|---|
+| `dashboard` | Dashboard | ▦ |
+| `new-bill` | New Bill | ✚ |
+| `bills` | Bills History | ☰ |
+| `items` | Items & Rates | ⊞ |
+
+Active nav item: `background: rgba(193,127,58,0.15)`, `color: --accent`, `border-left: 3px solid --accent`
+
+---
+
+## 7. State Management
+
+All state lives in a single JS object:
+
+```javascript
+let state = {
+  page: 'dashboard',
+  items: [...],       // loaded from localStorage or defaults
+  bills: [...],       // loaded from localStorage
+  nextId: 1,          // auto-incrementing bill ID
+  bill: {             // current bill being created/edited
+    customer: '',
+    phone: '',
+    event: '',
+    date: '',
+    items: [],
+    advance: 0
+  },
+  editingBillId: null, // null = new bill, number = editing existing
+  search: ''
+};
+```
+
+`save()` function writes `state.items`, `state.bills`, `state.nextId` to localStorage.
+
+---
+
+## 8. Default Items (Pre-loaded in Urdu)
+
+```javascript
+const DEFAULT_ITEMS = [
+  { id: 1, name: 'ڈش',        rate: 30  },
+  { id: 2, name: 'چاندنی',    rate: 100 },
+  { id: 3, name: 'جگ',        rate: 30  },
+  { id: 4, name: 'گلاس',      rate: 5   },
+  { id: 5, name: 'دری',       rate: 100 },
+  { id: 6, name: 'ملکی چیئر', rate: 100 }
+];
+```
+
+If `localStorage` has no items, use these defaults.
+
+---
+
+## 9. Roman Urdu → Urdu Auto-Conversion
+
+When user types item name in Roman Urdu, convert automatically to Urdu script.
+
+```javascript
+const ROMAN_TO_URDU = {
+  'thaal':'تھال', 'thal':'تھال', 'thali':'تھالی',
+  'jug':'جگ', 'jag':'جگ',
+  'daree':'دری', 'dari':'دری',
+  'chandni':'چاندنی', 'chandi':'چاندنی',
+  'dish':'ڈش',
+  'glass':'گلاس', 'gilas':'گلاس',
+  'chair':'چیئر', 'kursi':'کرسی',
+  'milky chair':'ملکی چیئر', 'milky':'ملکی',
+  'dastarkhwan':'دسترخوان', 'dastarkhaan':'دسترخوان',
+  'shamiana':'شامیانہ', 'shamiyana':'شامیانہ',
+  'canopy':'کینوپی',
+  'table':'ٹیبل', 'mez':'میز',
+  'parda':'پردہ',
+  'sofa':'صوفہ',
+  'carpet':'قالین', 'kaleen':'قالین',
+  'bartan':'برتن',
+  'tasla':'تسلہ',
+  'patila':'پتیلا', 'pateela':'پتیلا',
+  'tawa':'توا',
+  'karahi':'کڑاہی', 'kadhai':'کڑاہی',
+  'lota':'لوٹا',
+  'balti':'بالٹی',
+  'chulha':'چولہا',
+  'stove':'اسٹوو',
+  'generator':'جنریٹر',
+  'tent':'خیمہ', 'khema':'خیمہ',
+  'stage':'اسٹیج',
+  'mic':'مائیک', 'mike':'مائیک',
+  'speaker':'اسپیکر',
+  'light':'لائٹ', 'batti':'بتی',
+  'fan':'پنکھا', 'pankha':'پنکھا',
+  'cooler':'کولر',
+  'ac':'اے سی',
+  'heater':'ہیٹر',
+  'pateeli':'پتیلی',
+  'degchi':'دیگچی',
+  'matka':'مٹکا',
+  'surahi':'سراہی',
+  'katori':'کٹوری',
+  'bowl':'باؤل',
+  'plate':'پلیٹ',
+  'spoon':'چمچ', 'chamcha':'چمچ',
+  'fork':'کانٹا', 'kanta':'کانٹا',
+  'knife':'چھری', 'chhuri':'چھری',
+  'tray':'ٹرے',
+  'dabba':'ڈبہ',
+  'tokri':'ٹوکری',
+  'jhadu':'جھاڑو',
+  'broom':'جھاڑو'
+};
+
+function romanToUrdu(text) {
+  if (!text) return '';
+  const lower = text.toLowerCase().trim();
+  if (ROMAN_TO_URDU[lower]) return ROMAN_TO_URDU[lower];
+  const words = lower.split(/\s+/);
+  const converted = words.map(w => ROMAN_TO_URDU[w] || w);
+  const result = converted.join(' ');
+  return result !== lower ? result : '';
+}
+```
+
+**How it works in the Add Item modal:**
+1. User types Roman Urdu in "Item Name" input
+2. `oninput` fires `previewUrdu()` which calls `romanToUrdu()`
+3. If conversion found: show Urdu preview hint below input (`direction:rtl`) AND auto-fill the "Saved Name (Urdu)" input
+4. If no conversion: copy raw text to Urdu input
+5. On save: use the Urdu input value as the final item name
+
+---
+
+## 10. Page: Dashboard
+
+**Topbar:** "Dashboard" title + "✚ New Bill" button (gold)
+
+**4 stat cards in a grid (4 columns):**
+- Total Bills (count)
+- Total Revenue (sum of all bill totals, gold color)
+- Advance Received (sum of all advances, green color)
+- Pending Amount (sum of all remaining, red color)
+
+**Recent Bills table (last 5, reversed):**
+Columns: Bill #, Customer (name + phone below), Event/Date, Total, Advance, Remaining, Action (View + Edit buttons)
+
+---
+
+## 11. Page: New Bill / Edit Bill
+
+**Edit mode indicator:** When `state.editingBillId` is set, show a gold info banner at top:
+> ✏ Editing MDS-XXXX — make your changes and click Save.
+
+**Layout:** 2-column grid — left side (form + items), right side (sticky summary card)
+
+### Left Side
+
+**Card 1 — Customer Information (2-col form grid):**
+- Customer Name * (text input)
+- Phone Number (text input)
+- Event / Occasion (text input)
+- Event Date (date input)
+
+**Card 2 — Bill Items:**
+- Header: "Bill Items" + "✚ Add Item" button
+- Dropdown `<select>` to pick from `state.items` — shows `name — Rs. rate/unit`
+- Items table with columns: #, Item (Urdu font), Rate, Qty (editable number input, width 70px), Amount, Remove (✕ button)
+- Empty state: "No items added yet"
+
+### Right Side (sticky)
+
+**Bill Summary card:**
+```
+Bill Summary
+┌─────────────────────────────────┐
+│ Sub Total          Rs. X,XXX    │
+│ ✓ Advance Payment  − Rs. X,XXX  │  ← green
+│─────────────────────────────────│
+│ Total Bill         Rs. X,XXX    │  ← bold, larger
+│ Remaining          Rs. X,XXX    │  ← red
+└─────────────────────────────────┘
+```
+- Advance Payment input field (number)
+- "✔ Save Bill" / "✔ Update Bill" button (green, full width)
+- "✕ Clear" button (plain, full width)
+
+**Formulas:**
+```
+billTotal = sum(item.qty * item.rate)
+remaining = billTotal - advance
+```
+
+---
+
+## 12. Page: Bills History
+
+**Topbar:** "Bills History" + "✚ New Bill" button
+
+**Search bar:** full-width text input, searches across customer name, phone, event, date, bill number. "Clear" button appears when search is active.
+
+**Table columns:** Bill #, Customer (name + phone), Event/Date, Items count, Total, Advance, Remaining (badge: green "✓ Paid" if 0, red amount if >0), Actions
+
+**Action buttons per row:** View (blue) | ✏ Edit (yellow/warning) | PDF | Del (red)
+
+---
+
+## 13. Page: Items & Rates
+
+**Topbar:** "Items & Rates" + "✚ Add Item" button
+
+**Info banner (blue):**
+> 💡 Roman Urdu Auto-Convert: Type item name in Roman Urdu (e.g. "thaal", "daree") and it will automatically convert to Urdu script.
+
+**Table columns:** #, Item Name (Urdu script, Noto Nastaliq Urdu font, 15px), Rate (gold pill badge), Actions (✏ Edit | ✕ Delete)
+
+### Add Item Modal
+```
+Item Name *          [text input — Roman Urdu or Urdu]
+                     [urdu hint below — direction:rtl, gold color]
+Saved Name (Urdu)    [text input — auto-filled, editable]
+Rate (Rs./unit) *    [number input]
+[Cancel]  [✚ Add Item]
+```
+
+### Edit Item Modal
+Same layout. Item name input starts blank (for new Roman Urdu), Urdu input pre-filled with existing name.
+
+---
+
+## 14. Bill ID Format
+
+```javascript
+function billId(id) {
+  return 'MDS-' + String(id).padStart(4, '0');
+}
+// e.g. MDS-0001, MDS-0024
+```
+
+---
+
+## 15. Invoice Preview (Modal)
+
+Triggered by "View" button. Opens in modal. Contains:
+
+### Header (dark background `#1a1916`)
+- Business name in gold (#c17f3a), 22px bold
+- Address in muted white, 12px
+- "INVOICE" text in large light weight letters
+
+### Meta section (light grey background, 2-col grid)
+- Left: Bill Number, Date Issued
+- Right: Customer name + phone, Event + date
+
+### Items Table
+- Dark header row
+- Alternating row shading
+- Item names in Urdu font
+- Last column: Amount, right-aligned, bold
+
+### Totals Box (full width)
+```
+Sub Total:                    Rs. X,XXX
+Advance Paid:             - Rs. X,XXX   ← green
+─────────────────────────────────────
+TOTAL:                        Rs. X,XXX   ← bold, 16px
+Remaining:                    Rs. X,XXX   ← red, bold
+```
+
+### Footer
+"Thank you for choosing Malik Decoration Service · Karachi · address"
+
+### Modal footer buttons
+Close | ✏ Edit Bill (yellow) | 🖨 Print | ⬇ Download PDF (gold)
+
+---
+
+## 16. PDF Generation (jsPDF)
+
+Use `jsPDF` + `jspdf-autotable`. Page: A4, portrait, unit: mm. Margins: 14mm each side.
+
+```
+boxW = 210 - 14*2 = 182mm  (full content width)
+```
+
+### Header block (0–52mm)
+- Dark fill (#1a1916) rect full width
+- Gold accent line (2.5mm) at y=52
+- Business name (gold, bold, 18pt) at x=14, y=18
+- Address (muted, 9pt) at x=14, y=25
+- "INVOICE" (light, 26pt) right-aligned at x=196
+- Bill ID and date (9pt, muted) right-aligned at y=29, y=35
+
+### Customer Info Box (y=62, height=30mm, full boxW)
+```
+┌────────────────────────────────────────────────────┐
+│ CUSTOMER              │  PHONE                     │
+│ Ahmed Khan            │  0321-1234567              │
+│ EVENT                 │  DATE                      │
+│ Wedding               │  2026-06-15                │
+└────────────────────────────────────────────────────┘
+```
+- Light fill (#f9f8f5), border (#d2d0c8)
+- Labels: 8pt, uppercase, muted color
+- Values: 10–11pt, dark color
+
+### Items Table (via autoTable)
+- Starts at y=100
+- Head: dark background, white text
+- Alternate rows: light fill
+- Columns: #(12mm), Item, Rate, Qty, Amount(right-aligned bold)
+
+### Totals Box — CRITICAL: full boxW, height=52mm
+```
+y = autoTable.finalY + 6
+
+rect(14, y, 182, 52)  ← full width, 52mm tall
+
+Row 1 (y+11): Sub Total:          Rs. X,XXX
+Row 2 (y+22): Advance Paid:    - Rs. X,XXX   (green)
+Line  (y+28): horizontal divider
+Row 3 (y+37): TOTAL:              Rs. X,XXX   (bold, 12pt)
+Row 4 (y+48): Remaining:          Rs. X,XXX   (red, bold, 10pt)
+```
+
+All values right-aligned at `x = 14 + 182 - 6 = 190mm`
+Labels left-aligned at `x = 14 + 6 = 20mm`
+
+### Footer (bottom 20mm of page)
+- Light fill rect
+- 2 centered lines: thank you message + address
+
+**Save filename:** `Invoice-MDS-XXXX-CustomerName.pdf`
+
+---
+
+## 17. Component Patterns
+
+### Button classes
+```css
+.btn          /* base: white bg, border, hover */
+.btn-primary  /* gold bg, white text */
+.btn-danger   /* red-light bg, red text */
+.btn-success  /* green-light bg, green text */
+.btn-info     /* blue-light bg, blue text */
+.btn-warning  /* yellow-light bg, amber text */
+.btn-sm       /* smaller padding */
+```
+
+### Badge classes
+```css
+.badge-success  /* green pill */
+.badge-danger   /* red pill */
+```
+
+### Modal pattern
+- Fixed overlay backdrop `rgba(0,0,0,0.45)`
+- White modal box, max-width 700px, max-height 90vh, scrollable
+- Header (title + ✕ close), body, footer (right-aligned buttons)
+- Click outside to close
+
+### Item name rendering
+All item names must use:
+```css
+font-family: 'Noto Nastaliq Urdu', 'Segoe UI', sans-serif;
+```
+In tables and invoice.
+
+---
+
+## 18. Edit Bill Flow
+
+```
+User clicks ✏ Edit on any bill
+  → state.editingBillId = bill.id
+  → state.bill = deep copy of bill data
+  → state.page = 'new-bill'
+  → renderAll()
+
+On "✔ Update Bill":
+  → find bill by editingBillId in state.bills
+  → update in-place
+  → save()
+  → state.editingBillId = null
+  → resetBill()
+  → navigate('bills')
+```
+
+---
+
+## 19. Print Support
+
+```css
+@media print {
+  .no-print { display: none !important; }
+}
+```
+
+`window.print()` is called from the "🖨 Print" button in the invoice modal footer.
+
+---
+
+## 20. Validation Rules
+
+| Field | Rule |
+|---|---|
+| Customer Name | Required, non-empty |
+| Items | At least 1 item required |
+| Item Name | Required |
+| Item Rate | Required, number ≥ 0 |
+| Advance | Optional, defaults to 0 |
+| Qty | Minimum 1 |
+
+Show `alert()` for validation errors.
+
+---
+
+## 21. Complete HTML File Structure
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Malik Decoration Service</title>
+  <script src="jsPDF CDN"></script>
+  <script src="jsPDF autoTable CDN"></script>
+  <style>
+    /* All CSS here */
+  </style>
+</head>
+<body>
+
+  <!-- App Shell -->
+  <div class="app-shell">
+    <nav class="sidebar">
+      <div class="sidebar-logo">...</div>
+      <div class="sidebar-nav" id="sidebar-nav"></div>
+      <div class="sidebar-footer">Saeedabad Baldia Town, Karachi</div>
+    </nav>
+    <div class="main">
+      <header class="topbar">
+        <span id="topbar-title"></span>
+        <div id="topbar-actions"></div>
+      </header>
+      <main class="content" id="main-content"></main>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modal-backdrop" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="modal-title"></span>
+        <button onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <script>
+    // ROMAN_TO_URDU dictionary
+    // romanToUrdu() function
+    // DEFAULT_ITEMS array
+    // state object
+    // save(), getNextItemId(), billTotal(), remaining(), formatPKR(), billId()
+    // renderSidebar(), navigate(), renderAll(), renderPage()
+    // renderDashboard()
+    // resetBill(), editBill(), renderNewBill()
+    // addItemToBill(), updateQty(), removeItemFromBill()
+    // saveBill(), showBillSavedModal()
+    // renderBills(), deleteBill()
+    // renderItems()
+    // showAddItemModal(), previewUrdu(), addItem()
+    // showEditItemModal(), updateItem(), deleteItem()
+    // viewBill()
+    // generatePDF()
+    // openModal(), closeModal()
+    // renderAll() call at bottom
+  </script>
+</body>
+</html>
+```
+
+---
+
+## 22. Key Implementation Notes for Replit
+
+1. **Single file only** — everything in `index.html`. No `package.json`, no npm, no build step.
+2. **CDN scripts** must load before the `<script>` block. Use the exact CDN URLs provided above.
+3. **localStorage keys** must be exactly: `mds_items`, `mds_bills`, `mds_nextId`.
+4. **PDF totals box** must be `boxW = W - mg*2 = 182mm` wide and `52mm` tall to fit all 4 rows (Sub Total, Advance, Total, Remaining) — the Remaining row must be inside the box, not below it.
+5. **Urdu font** — use `font-family: 'Noto Nastaliq Urdu', 'Segoe UI', sans-serif` for all item name cells.
+6. **All rendering** is done via `innerHTML` injection — no virtual DOM, no React, no Vue.
+7. **Bill editing** must deep-copy the bill's items array to avoid mutation: `JSON.parse(JSON.stringify(b.items))`.
+8. **Gold color** (`#c17f3a`) is the primary brand accent — used for sidebar active state, buttons, rate badges, PDF header.
+9. The `previewUrdu()` function must wire to both the hint `<div>` and the Urdu name `<input>` simultaneously on every keystroke.
+10. Default items load only if `localStorage.getItem('mds_items')` returns `null` — existing user data must be preserved.
+
+---
+
+## 23. Expected Output
+
+Running `index.html` in any browser should produce:
+
+- ✅ Dark sidebar with gold business name and 4 nav items
+- ✅ Dashboard with 4 stat cards and recent bills table
+- ✅ New Bill form with customer info + items selector + live bill summary
+- ✅ Advance payment deduction with live remaining calculation
+- ✅ Save bill → success modal → view/download PDF
+- ✅ Bills History with search, edit, delete, PDF download
+- ✅ Items & Rates with Urdu names, edit/delete, and Roman Urdu auto-convert on add
+- ✅ Invoice modal with professional layout and Edit Bill / Print / PDF buttons
+- ✅ PDF: A4, dark header, customer box full-width, items table, totals box full-width with all 4 rows inside
+- ✅ All data persisted in localStorage across page refreshes

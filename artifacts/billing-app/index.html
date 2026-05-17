@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Malik Decoration Service — Billing Management</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface2: #f9f8f5;
+      --border: #e2e0d8;
+      --border2: #d0cec4;
+      --text: #1a1916;
+      --text2: #6b6860;
+      --text3: #9b998f;
+      --accent: #c17f3a;
+      --accent-light: #fdf3e7;
+      --accent-dark: #a06828;
+      --danger: #c0392b;
+      --danger-light: #fdf0ee;
+      --success: #2e7d32;
+      --success-light: #f0f7f0;
+      --info: #1565c0;
+      --info-light: #e8f0fb;
+      --warning: #b45309;
+      --warning-light: #fffbeb;
+      --r: 10px;
+      --rsm: 6px;
+      --font: 'Segoe UI', system-ui, sans-serif;
+      --sidebar-w: 220px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ─── APP SHELL ─── */
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: #1a1916;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 200;
+      transition: transform .25s ease;
+    }
+
+    .sidebar-logo {
+      padding: 20px 16px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-logo .biz-name {
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: .3px;
+      line-height: 1.4;
+    }
+    .sidebar-logo .biz-sub {
+      color: rgba(255,255,255,.4);
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 8px 0;
+      overflow-y: auto;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      color: rgba(255,255,255,.6);
+      cursor: pointer;
+      font-size: 13.5px;
+      border-left: 3px solid transparent;
+      transition: background .15s, color .15s;
+      user-select: none;
+    }
+    .nav-item:hover {
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.9);
+    }
+    .nav-item.active {
+      background: rgba(193,127,58,.15);
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+    .nav-item .nav-icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      padding: 12px 16px;
+      font-size: 10.5px;
+      color: rgba(255,255,255,.22);
+      border-top: 1px solid rgba(255,255,255,.06);
+      line-height: 1.5;
+    }
+
+    /* Overlay for mobile */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 199;
+    }
+
+    /* ─── MAIN AREA ─── */
+    .main {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      gap: 12px;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topbar-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* Hamburger */
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text);
+      padding: 4px;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    /* ─── CONTENT ─── */
+    .content {
+      flex: 1;
+      padding: 24px;
+      background: var(--bg);
+    }
+
+    /* ─── BUTTONS ─── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--rsm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 13px;
+      font-family: var(--font);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s, opacity .15s;
+      font-weight: 500;
+      line-height: 1;
+    }
+    .btn:hover { background: var(--bg); }
+    .btn:active { opacity: .85; }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent-dark); }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-danger { background: var(--danger-light); color: var(--danger); border-color: #f5c6c2; }
+    .btn-danger:hover { background: #f9dbd9; }
+    .btn-success { background: var(--success-light); color: var(--success); border-color: #b8ddb9; }
+    .btn-success:hover { background: #dff0df; }
+    .btn-info { background: var(--info-light); color: var(--info); border-color: #b3cef5; }
+    .btn-info:hover { background: #d4e3f9; }
+    .btn-warning { background: var(--warning-light); color: var(--warning); border-color: #fcd98a; }
+    .btn-warning:hover { background: #fef3c7; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-full { width: 100%; justify-content: center; }
+
+    /* ─── CARDS ─── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ─── STAT CARDS ─── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px 20px;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      font-weight: 600;
+    }
+    .stat-value {
+      font-size: 26px;
+      font-weight: 700;
+      margin-top: 6px;
+      color: var(--text);
+    }
+    .stat-value.gold { color: var(--accent); }
+    .stat-value.green { color: var(--success); }
+    .stat-value.red { color: var(--danger); }
+
+    /* ─── TABLES ─── */
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafaf8; }
+
+    .cell-name { font-weight: 500; }
+    .cell-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+    .urdu { font-family: 'Noto Nastaliq Urdu', 'Segoe UI', sans-serif; font-size: 15px; direction: rtl; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-success { background: var(--success-light); color: var(--success); }
+    .badge-danger { background: var(--danger-light); color: var(--danger); }
+    .badge-gold { background: var(--accent-light); color: var(--accent-dark); }
+
+    .action-btns { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
+
+    /* ─── EMPTY STATE ─── */
+    .empty-state {
+      text-align: center;
+      padding: 32px;
+      color: var(--text3);
+      font-size: 13.5px;
+    }
+
+    /* ─── NEW BILL LAYOUT ─── */
+    .bill-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
+      align-items: start;
+    }
+    .bill-left { display: flex; flex-direction: column; gap: 16px; }
+    .bill-right { position: sticky; top: 72px; }
+
+    /* ─── FORM ─── */
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text2);
+    }
+    .form-group input,
+    .form-group select {
+      padding: 9px 12px;
+      border: 1px solid var(--border2);
+      border-radius: var(--rsm);
+      font-size: 13.5px;
+      font-family: var(--font);
+      background: var(--surface);
+      color: var(--text);
+      width: 100%;
+      transition: border-color .15s;
+      outline: none;
+    }
+    .form-group input:focus,
+    .form-group select:focus { border-color: var(--accent); }
+    .form-group select { appearance: none; cursor: pointer; }
+
+    /* ─── BILL SUMMARY ─── */
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row.total {
+      font-size: 16px;
+      font-weight: 700;
+      border-top: 2px solid var(--border2);
+      padding-top: 12px;
+      border-bottom: none;
+    }
+    .summary-row .lbl { color: var(--text2); }
+    .summary-row .val { font-weight: 600; }
+    .summary-row.advance .val { color: var(--success); }
+    .summary-row.remaining .val { color: var(--danger); }
+
+    .advance-input-group {
+      margin: 14px 0;
+    }
+    .advance-input-group label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text2);
+      margin-bottom: 5px;
+    }
+    .advance-input-group input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border2);
+      border-radius: var(--rsm);
+      font-size: 14px;
+      font-family: var(--font);
+      outline: none;
+    }
+    .advance-input-group input:focus { border-color: var(--accent); }
+
+    /* ─── BILL ITEMS TABLE ─── */
+    .qty-input {
+      width: 70px;
+      padding: 5px 8px;
+      border: 1px solid var(--border2);
+      border-radius: var(--rsm);
+      font-size: 13px;
+      text-align: center;
+      outline: none;
+      font-family: var(--font);
+    }
+    .qty-input:focus { border-color: var(--accent); }
+
+    /* ─── SEARCH BAR ─── */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 9px 14px;
+      border: 1px solid var(--border2);
+      border-radius: var(--rsm);
+      font-size: 13.5px;
+      font-family: var(--font);
+      outline: none;
+      background: var(--surface);
+    }
+    .search-bar input:focus { border-color: var(--accent); }
+
+    /* ─── INFO BANNER ─── */
+    .banner {
+      padding: 10px 14px;
+      border-radius: var(--rsm);
+      font-size: 13px;
+      margin-bottom: 16px;
+      border: 1px solid;
+    }
+    .banner-info { background: var(--info-light); color: var(--info); border-color: #b3cef5; }
+    .banner-warning { background: var(--accent-light); color: var(--accent-dark); border-color: #f0c98a; }
+
+    /* ─── MODAL ─── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal {
+      background: var(--surface);
+      border-radius: var(--r);
+      max-width: 700px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-header span {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text3);
+      font-size: 18px;
+      line-height: 1;
+      padding: 4px;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body {
+      overflow-y: auto;
+      padding: 20px;
+      flex: 1;
+    }
+    .modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    /* ─── INVOICE PREVIEW ─── */
+    .inv-header {
+      background: #1a1916;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-radius: var(--rsm) var(--rsm) 0 0;
+    }
+    .inv-header .left .biz { color: var(--accent); font-size: 19px; font-weight: 700; }
+    .inv-header .left .addr { color: rgba(255,255,255,.45); font-size: 11px; margin-top: 4px; }
+    .inv-header .right { text-align: right; }
+    .inv-header .right .inv-lbl { color: rgba(255,255,255,.18); font-size: 26px; font-weight: 300; letter-spacing: 3px; }
+    .inv-header .right .inv-meta { color: rgba(255,255,255,.45); font-size: 11px; margin-top: 4px; }
+
+    .inv-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-top: none;
+    }
+    .inv-meta-cell {
+      padding: 14px 20px;
+      border-right: 1px solid var(--border);
+    }
+    .inv-meta-cell:last-child { border-right: none; }
+    .inv-meta-cell:nth-child(1),
+    .inv-meta-cell:nth-child(2) { border-bottom: 1px solid var(--border); }
+    .inv-meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--text3); font-weight: 600; margin-bottom: 4px; }
+    .inv-meta-value { font-size: 13.5px; color: var(--text); font-weight: 500; }
+
+    .inv-table-wrap { border: 1px solid var(--border); border-top: none; }
+    .inv-table-wrap table { font-size: 13px; }
+    .inv-table-wrap th { background: #1a1916; color: rgba(255,255,255,.85); }
+    .inv-table-wrap tr:nth-child(even) td { background: var(--surface2); }
+    .inv-table-wrap tr:hover td { background: var(--accent-light); }
+
+    .inv-totals {
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 16px 20px;
+      background: var(--surface);
+    }
+    .inv-total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 14px;
+    }
+    .inv-total-row.divider { border-top: 1px solid var(--border2); margin-top: 6px; padding-top: 10px; }
+    .inv-total-row .lbl { color: var(--text2); }
+    .inv-total-row .val { font-weight: 600; }
+    .inv-total-row.advance .val { color: var(--success); }
+    .inv-total-row.grand .val,
+    .inv-total-row.grand .lbl { font-size: 16px; font-weight: 700; color: var(--text); }
+    .inv-total-row.remaining .val { color: var(--danger); font-weight: 700; }
+    .inv-footer-note {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 12px 20px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text3);
+      border-radius: 0 0 var(--rsm) var(--rsm);
+    }
+
+    /* ─── EDIT BANNER ─── */
+    .edit-banner {
+      background: var(--accent-light);
+      border: 1px solid #f0c98a;
+      color: var(--accent-dark);
+      padding: 10px 14px;
+      border-radius: var(--rsm);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    /* ─── PRINT ─── */
+    @media print {
+      .no-print { display: none !important; }
+      .sidebar, .topbar, .modal-footer { display: none !important; }
+      .modal-backdrop { position: static; background: none; padding: 0; display: block; }
+      .modal { max-height: none; box-shadow: none; border-radius: 0; }
+      .modal-header .modal-close { display: none; }
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .bill-grid { grid-template-columns: 1fr; }
+      .bill-right { position: static; }
+      .form-grid-2 { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      :root { --sidebar-w: 220px; }
+
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0,0,0,.3);
+      }
+      .sidebar-overlay.open { display: block; }
+
+      .main { margin-left: 0; }
+
+      .hamburger { display: block; }
+
+      .topbar { padding: 0 16px; }
+      .content { padding: 16px; }
+
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .stat-value { font-size: 20px; }
+
+      .topbar-actions .btn span { display: none; }
+
+      .modal { max-height: 95vh; margin: 8px; }
+      .inv-header { flex-direction: column; gap: 12px; }
+      .inv-header .right { text-align: left; }
+      .inv-meta-grid { grid-template-columns: 1fr; }
+      .inv-meta-cell { border-right: none !important; }
+      .inv-meta-cell:nth-child(1),
+      .inv-meta-cell:nth-child(2) { border-bottom: 1px solid var(--border); }
+
+      th, td { padding: 8px 10px; }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="biz-name">MALIK DECORATION SERVICE</div>
+      <div class="biz-sub">Billing Management System</div>
+    </div>
+    <div class="sidebar-nav" id="sidebar-nav"></div>
+    <div class="sidebar-footer">13/1 Sector 5G, Saeedabad<br>Baldia Town, Karachi</div>
+  </nav>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar no-print">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()">&#9776;</button>
+        <span class="topbar-title" id="topbar-title">Dashboard</span>
+      </div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </header>
+    <main class="content" id="main-content"></main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal-backdrop" style="display:none;" onclick="handleBackdropClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span id="modal-title"></span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer no-print" id="modal-footer"></div>
+  </div>
+</div>
+
+<script>
+// ─── ROMAN → URDU DICTIONARY ───
+const ROMAN_TO_URDU = {
+  'thaal':'تھال','thal':'تھال','thali':'تھالی',
+  'jug':'جگ','jag':'جگ',
+  'daree':'دری','dari':'دری',
+  'chandni':'چاندنی','chandi':'چاندنی',
+  'dish':'ڈش',
+  'glass':'گلاس','gilas':'گلاس',
+  'chair':'چیئر','kursi':'کرسی',
+  'milky chair':'ملکی چیئر','milky':'ملکی',
+  'dastarkhwan':'دسترخوان','dastarkhaan':'دسترخوان',
+  'shamiana':'شامیانہ','shamiyana':'شامیانہ',
+  'canopy':'کینوپی',
+  'table':'ٹیبل','mez':'میز',
+  'parda':'پردہ',
+  'sofa':'صوفہ',
+  'carpet':'قالین','kaleen':'قالین',
+  'bartan':'برتن',
+  'tasla':'تسلہ',
+  'patila':'پتیلا','pateela':'پتیلا',
+  'tawa':'توا',
+  'karahi':'کڑاہی','kadhai':'کڑاہی',
+  'lota':'لوٹا',
+  'balti':'بالٹی',
+  'chulha':'چولہا',
+  'stove':'اسٹوو',
+  'generator':'جنریٹر',
+  'tent':'خیمہ','khema':'خیمہ',
+  'stage':'اسٹیج',
+  'mic':'مائیک','mike':'مائیک',
+  'speaker':'اسپیکر',
+  'light':'لائٹ','batti':'بتی',
+  'fan':'پنکھا','pankha':'پنکھا',
+  'cooler':'کولر',
+  'ac':'اے سی',
+  'heater':'ہیٹر',
+  'pateeli':'پتیلی',
+  'degchi':'دیگچی',
+  'matka':'مٹکا',
+  'surahi':'سراہی',
+  'katori':'کٹوری',
+  'bowl':'باؤل',
+  'plate':'پلیٹ',
+  'spoon':'چمچ','chamcha':'چمچ',
+  'fork':'کانٹا','kanta':'کانٹا',
+  'knife':'چھری','chhuri':'چھری',
+  'tray':'ٹرے',
+  'dabba':'ڈبہ',
+  'tokri':'ٹوکری',
+  'jhadu':'جھاڑو',
+  'broom':'جھاڑو'
+};
+
+function romanToUrdu(text) {
+  if (!text) return '';
+  const lower = text.toLowerCase().trim();
+  if (ROMAN_TO_URDU[lower]) return ROMAN_TO_URDU[lower];
+  const words = lower.split(/\s+/);
+  const converted = words.map(w => ROMAN_TO_URDU[w] || w);
+  const result = converted.join(' ');
+  return result !== lower ? result : '';
+}
+
+// ─── DEFAULT ITEMS ───
+const DEFAULT_ITEMS = [
+  { id: 1, name: 'ڈش',        rate: 30  },
+  { id: 2, name: 'چاندنی',    rate: 100 },
+  { id: 3, name: 'جگ',        rate: 30  },
+  { id: 4, name: 'گلاس',      rate: 5   },
+  { id: 5, name: 'دری',       rate: 100 },
+  { id: 6, name: 'ملکی چیئر', rate: 100 }
+];
+
+// ─── STATE ───
+let state = {
+  page: 'dashboard',
+  items: [],
+  bills: [],
+  nextId: 1,
+  bill: { customer: '', phone: '', event: '', date: '', items: [], advance: 0 },
+  editingBillId: null,
+  search: ''
+};
+
+// ─── PERSISTENCE ───
+function load() {
+  const si = localStorage.getItem('mds_items');
+  state.items = si ? JSON.parse(si) : JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+  const sb = localStorage.getItem('mds_bills');
+  state.bills = sb ? JSON.parse(sb) : [];
+  const sid = localStorage.getItem('mds_nextId');
+  state.nextId = sid ? parseInt(sid) : 1;
+}
+
+function save() {
+  localStorage.setItem('mds_items', JSON.stringify(state.items));
+  localStorage.setItem('mds_bills', JSON.stringify(state.bills));
+  localStorage.setItem('mds_nextId', String(state.nextId));
+}
+
+// ─── UTILS ───
+function billId(id) { return 'MDS-' + String(id).padStart(4, '0'); }
+
+function billTotal(items) {
+  return (items || []).reduce((s, i) => s + (i.qty * i.rate), 0);
+}
+
+function remaining(items, advance) {
+  return billTotal(items) - (advance || 0);
+}
+
+function formatPKR(n) {
+  return 'Rs. ' + Number(n || 0).toLocaleString('en-PK');
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const parts = d.split('-');
+  if (parts.length !== 3) return d;
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
+function getNextItemId() {
+  return state.items.length ? Math.max(...state.items.map(i => i.id)) + 1 : 1;
+}
+
+// ─── NAVIGATION ───
+const NAV = [
+  { id: 'dashboard', label: 'Dashboard',     icon: '▦' },
+  { id: 'new-bill',  label: 'New Bill',       icon: '✚' },
+  { id: 'bills',     label: 'Bills History',  icon: '☰' },
+  { id: 'items',     label: 'Items & Rates',  icon: '⊞' }
+];
+
+const PAGE_TITLES = {
+  'dashboard': 'Dashboard',
+  'new-bill':  'New Bill',
+  'bills':     'Bills History',
+  'items':     'Items & Rates'
+};
+
+function navigate(page) {
+  state.page = page;
+  if (page !== 'new-bill') {
+    state.editingBillId = null;
+  }
+  closeSidebar();
+  renderAll();
+}
+
+function renderSidebar() {
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = NAV.map(n => `
+    <div class="nav-item ${state.page === n.id ? 'active' : ''}" onclick="navigate('${n.id}')">
+      <span class="nav-icon">${n.icon}</span>
+      <span>${n.label}</span>
+    </div>
+  `).join('');
+}
+
+function renderAll() {
+  renderSidebar();
+  document.getElementById('topbar-title').textContent = PAGE_TITLES[state.page] || '';
+  renderTopbarActions();
+  renderPage();
+}
+
+function renderTopbarActions() {
+  const el = document.getElementById('topbar-actions');
+  if (state.page === 'dashboard') {
+    el.innerHTML = `<button class="btn btn-primary btn-sm" onclick="navigate('new-bill')">✚ <span>New Bill</span></button>`;
+  } else if (state.page === 'bills') {
+    el.innerHTML = `<button class="btn btn-primary btn-sm" onclick="navigate('new-bill')">✚ <span>New Bill</span></button>`;
+  } else if (state.page === 'items') {
+    el.innerHTML = `<button class="btn btn-primary btn-sm" onclick="showAddItemModal()">✚ <span>Add Item</span></button>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+function renderPage() {
+  const el = document.getElementById('main-content');
+  if (state.page === 'dashboard') el.innerHTML = renderDashboard();
+  else if (state.page === 'new-bill') el.innerHTML = renderNewBill();
+  else if (state.page === 'bills') el.innerHTML = renderBills();
+  else if (state.page === 'items') el.innerHTML = renderItems();
+}
+
+// ─── SIDEBAR TOGGLE (mobile) ───
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
+
+// ─── DASHBOARD ───
+function renderDashboard() {
+  const bills = state.bills;
+  const totalBills = bills.length;
+  const totalRevenue = bills.reduce((s, b) => s + billTotal(b.items), 0);
+  const totalAdvance = bills.reduce((s, b) => s + (b.advance || 0), 0);
+  const totalPending = bills.reduce((s, b) => s + remaining(b.items, b.advance), 0);
+
+  const recent = [...bills].reverse().slice(0, 5);
+
+  return `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Bills</div>
+        <div class="stat-value">${totalBills}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value gold">${formatPKR(totalRevenue)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Advance Received</div>
+        <div class="stat-value green">${formatPKR(totalAdvance)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending Amount</div>
+        <div class="stat-value red">${formatPKR(totalPending)}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Recent Bills</span>
+        <button class="btn btn-sm btn-primary" onclick="navigate('bills')">View All</button>
+      </div>
+      ${recent.length === 0 ? `<div class="empty-state">No bills yet. <a href="#" onclick="navigate('new-bill');return false;" style="color:var(--accent)">Create your first bill →</a></div>` : `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Bill #</th>
+              <th>Customer</th>
+              <th>Event / Date</th>
+              <th>Total</th>
+              <th>Advance</th>
+              <th>Remaining</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${recent.map(b => `
+              <tr>
+                <td><strong>${billId(b.id)}</strong></td>
+                <td>
+                  <div class="cell-name">${esc(b.customer)}</div>
+                  <div class="cell-sub">${esc(b.phone || '')}</div>
+                </td>
+                <td>
+                  <div>${esc(b.event || '—')}</div>
+                  <div class="cell-sub">${fmtDate(b.date)}</div>
+                </td>
+                <td>${formatPKR(billTotal(b.items))}</td>
+                <td>${formatPKR(b.advance)}</td>
+                <td>${remaining(b.items, b.advance) <= 0
+                  ? '<span class="badge badge-success">✓ Paid</span>'
+                  : `<span class="badge badge-danger">${formatPKR(remaining(b.items, b.advance))}</span>`}</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn btn-info btn-sm" onclick="viewBill(${b.id})">View</button>
+                    <button class="btn btn-warning btn-sm" onclick="editBill(${b.id})">✏</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    </div>
+  `;
+}
+
+// ─── NEW BILL ───
+function resetBill() {
+  state.bill = { customer: '', phone: '', event: '', date: '', items: [], advance: 0 };
+  state.editingBillId = null;
+}
+
+function editBill(id) {
+  const b = state.bills.find(x => x.id === id);
+  if (!b) return;
+  state.editingBillId = id;
+  state.bill = JSON.parse(JSON.stringify({ ...b }));
+  state.page = 'new-bill';
+  renderAll();
+}
+
+function renderNewBill() {
+  const b = state.bill;
+  const total = billTotal(b.items);
+  const rem = remaining(b.items, b.advance);
+  const isEdit = state.editingBillId !== null;
+
+  return `
+    ${isEdit ? `<div class="edit-banner">✏ Editing ${billId(state.editingBillId)} — make your changes and click Update.</div>` : ''}
+    <div class="bill-grid">
+      <div class="bill-left">
+        <!-- Customer Info -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Customer Information</span>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Customer Name *</label>
+              <input type="text" id="f-customer" value="${esc(b.customer)}" placeholder="Full name" oninput="syncField('customer',this.value)">
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="text" id="f-phone" value="${esc(b.phone)}" placeholder="03xx-xxxxxxx" oninput="syncField('phone',this.value)">
+            </div>
+            <div class="form-group">
+              <label>Event / Occasion</label>
+              <input type="text" id="f-event" value="${esc(b.event)}" placeholder="e.g. Wedding, Walima" oninput="syncField('event',this.value)">
+            </div>
+            <div class="form-group">
+              <label>Event Date</label>
+              <input type="date" id="f-date" value="${b.date}" oninput="syncField('date',this.value)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Bill Items -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Bill Items</span>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <div class="form-group" style="margin:0;">
+                <select id="item-select" style="min-width:180px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--rsm);font-size:13px;background:var(--surface);">
+                  <option value="">— Select item —</option>
+                  ${state.items.map(it => `<option value="${it.id}">${it.name} — Rs. ${it.rate}/unit</option>`).join('')}
+                </select>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="addItemToBill()">✚ Add</button>
+            </div>
+          </div>
+          ${b.items.length === 0 ? `<div class="empty-state">No items added yet</div>` : `
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>#</th><th>Item</th><th>Rate</th><th>Qty</th><th>Amount</th><th></th></tr>
+              </thead>
+              <tbody id="bill-items-body">
+                ${b.items.map((it, idx) => `
+                  <tr>
+                    <td>${idx + 1}</td>
+                    <td class="urdu">${esc(it.name)}</td>
+                    <td>${formatPKR(it.rate)}</td>
+                    <td><input class="qty-input" type="number" min="1" value="${it.qty}" onchange="updateQty(${idx},this.value)"></td>
+                    <td><strong>${formatPKR(it.qty * it.rate)}</strong></td>
+                    <td><button class="btn btn-danger btn-sm" onclick="removeItemFromBill(${idx})">✕</button></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>`}
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="bill-right">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Bill Summary</span></div>
+          <div>
+            <div class="summary-row">
+              <span class="lbl">Sub Total</span>
+              <span class="val">${formatPKR(total)}</span>
+            </div>
+            <div class="summary-row advance">
+              <span class="lbl">✓ Advance Payment</span>
+              <span class="val">− ${formatPKR(b.advance)}</span>
+            </div>
+            <div class="summary-row total">
+              <span class="lbl">Total Bill</span>
+              <span class="val">${formatPKR(total)}</span>
+            </div>
+            <div class="summary-row remaining">
+              <span class="lbl">Remaining</span>
+              <span class="val">${formatPKR(rem)}</span>
+            </div>
+          </div>
+          <div class="advance-input-group">
+            <label>Advance Payment (Rs.)</label>
+            <input type="number" min="0" value="${b.advance || 0}" placeholder="0" oninput="updateAdvance(this.value)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            <button class="btn btn-success btn-full" onclick="saveBill()">✔ ${isEdit ? 'Update Bill' : 'Save Bill'}</button>
+            <button class="btn btn-full" onclick="clearBill()">✕ Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function syncField(field, val) {
+  state.bill[field] = val;
+}
+
+function addItemToBill() {
+  const sel = document.getElementById('item-select');
+  const id = parseInt(sel.value);
+  if (!id) { alert('Please select an item.'); return; }
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  const existing = state.bill.items.find(i => i.id === id);
+  if (existing) {
+    existing.qty++;
+  } else {
+    state.bill.items.push({ id: item.id, name: item.name, rate: item.rate, qty: 1 });
+  }
+  renderPage();
+}
+
+function updateQty(idx, val) {
+  const q = Math.max(1, parseInt(val) || 1);
+  state.bill.items[idx].qty = q;
+  renderPage();
+}
+
+function removeItemFromBill(idx) {
+  state.bill.items.splice(idx, 1);
+  renderPage();
+}
+
+function updateAdvance(val) {
+  state.bill.advance = parseFloat(val) || 0;
+  renderPage();
+}
+
+function clearBill() {
+  resetBill();
+  renderPage();
+}
+
+function saveBill() {
+  const b = state.bill;
+  if (!b.customer.trim()) { alert('Customer name is required.'); return; }
+  if (b.items.length === 0) { alert('Please add at least one item.'); return; }
+
+  if (state.editingBillId !== null) {
+    const idx = state.bills.findIndex(x => x.id === state.editingBillId);
+    if (idx !== -1) {
+      state.bills[idx] = { ...state.bills[idx], ...b, id: state.editingBillId };
+    }
+    save();
+    state.editingBillId = null;
+    resetBill();
+    navigate('bills');
+  } else {
+    const newBill = { id: state.nextId++, ...b };
+    state.bills.push(newBill);
+    save();
+    const savedId = newBill.id;
+    resetBill();
+    showBillSavedModal(savedId);
+  }
+}
+
+function showBillSavedModal(billIdNum) {
+  openModal('Bill Saved!', `
+    <div style="text-align:center;padding:20px 0;">
+      <div style="font-size:40px;margin-bottom:12px;">✅</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:6px;">${billId(billIdNum)} saved successfully</div>
+      <div style="color:var(--text2);font-size:13.5px;">What would you like to do next?</div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal();navigate('bills')">View All Bills</button>
+    <button class="btn btn-info" onclick="closeModal();viewBill(${billIdNum})">View Invoice</button>
+    <button class="btn btn-primary" onclick="closeModal();generatePDF(${billIdNum})">⬇ Download PDF</button>
+  `);
+}
+
+// ─── BILLS HISTORY ───
+function renderBills() {
+  const q = state.search.toLowerCase().trim();
+  let bills = [...state.bills].reverse();
+  if (q) {
+    bills = bills.filter(b =>
+      billId(b.id).toLowerCase().includes(q) ||
+      b.customer.toLowerCase().includes(q) ||
+      (b.phone || '').includes(q) ||
+      (b.event || '').toLowerCase().includes(q) ||
+      (b.date || '').includes(q)
+    );
+  }
+
+  return `
+    <div class="search-bar">
+      <input type="text" placeholder="Search by name, phone, event, date, bill #…" value="${esc(state.search)}" oninput="updateSearch(this.value)">
+      ${state.search ? `<button class="btn btn-sm" onclick="clearSearch()">✕ Clear</button>` : ''}
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">All Bills ${bills.length > 0 ? `<span style="color:var(--text3);font-weight:400;font-size:13px;">(${bills.length})</span>` : ''}</span>
+        <button class="btn btn-primary btn-sm" onclick="navigate('new-bill')">✚ <span>New Bill</span></button>
+      </div>
+      ${bills.length === 0 ? `<div class="empty-state">${state.search ? 'No bills match your search.' : 'No bills yet.'}</div>` : `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Bill #</th>
+              <th>Customer</th>
+              <th>Event / Date</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Advance</th>
+              <th>Remaining</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bills.map(b => `
+              <tr>
+                <td><strong>${billId(b.id)}</strong></td>
+                <td>
+                  <div class="cell-name">${esc(b.customer)}</div>
+                  <div class="cell-sub">${esc(b.phone || '')}</div>
+                </td>
+                <td>
+                  <div>${esc(b.event || '—')}</div>
+                  <div class="cell-sub">${fmtDate(b.date)}</div>
+                </td>
+                <td>${b.items.length} item${b.items.length !== 1 ? 's' : ''}</td>
+                <td><strong>${formatPKR(billTotal(b.items))}</strong></td>
+                <td>${formatPKR(b.advance)}</td>
+                <td>${remaining(b.items, b.advance) <= 0
+                  ? '<span class="badge badge-success">✓ Paid</span>'
+                  : `<span class="badge badge-danger">${formatPKR(remaining(b.items, b.advance))}</span>`}</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn btn-info btn-sm" onclick="viewBill(${b.id})">View</button>
+                    <button class="btn btn-warning btn-sm" onclick="editBill(${b.id})">✏</button>
+                    <button class="btn btn-sm" onclick="generatePDF(${b.id})">PDF</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteBill(${b.id})">Del</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    </div>
+  `;
+}
+
+function updateSearch(val) {
+  state.search = val;
+  renderPage();
+}
+
+function clearSearch() {
+  state.search = '';
+  renderPage();
+}
+
+function deleteBill(id) {
+  if (!confirm(`Delete ${billId(id)}? This cannot be undone.`)) return;
+  state.bills = state.bills.filter(b => b.id !== id);
+  save();
+  renderPage();
+}
+
+// ─── ITEMS & RATES ───
+function renderItems() {
+  return `
+    <div class="banner banner-info">
+      💡 Roman Urdu Auto-Convert: Type item name in Roman Urdu (e.g. "thaal", "daree") and it will automatically convert to Urdu script.
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Items & Rates <span style="color:var(--text3);font-weight:400;font-size:13px;">(${state.items.length})</span></span>
+        <button class="btn btn-primary btn-sm" onclick="showAddItemModal()">✚ Add Item</button>
+      </div>
+      ${state.items.length === 0 ? `<div class="empty-state">No items. Add your first item.</div>` : `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Item Name</th><th>Rate</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            ${state.items.map((it, i) => `
+              <tr>
+                <td>${i + 1}</td>
+                <td class="urdu">${esc(it.name)}</td>
+                <td><span class="badge badge-gold">Rs. ${it.rate}</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn btn-warning btn-sm" onclick="showEditItemModal(${it.id})">✏ Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteItem(${it.id})">✕ Delete</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    </div>
+  `;
+}
+
+function showAddItemModal() {
+  openModal('Add New Item', `
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="form-group">
+        <label>Item Name * <span style="color:var(--text3);font-weight:400;">(Type Roman Urdu or Urdu)</span></label>
+        <input type="text" id="item-name-input" placeholder="e.g. thaal, dish, chandni…" oninput="previewUrdu(this.value)">
+        <div id="urdu-hint" style="font-family:'Noto Nastaliq Urdu',sans-serif;direction:rtl;color:var(--accent);font-size:14px;margin-top:4px;min-height:20px;"></div>
+      </div>
+      <div class="form-group">
+        <label>Saved Name (Urdu) *</label>
+        <input type="text" id="item-urdu-input" placeholder="اردو نام" style="direction:rtl;font-family:'Noto Nastaliq Urdu',sans-serif;font-size:15px;">
+      </div>
+      <div class="form-group">
+        <label>Rate (Rs./unit) *</label>
+        <input type="number" id="item-rate-input" placeholder="0" min="0">
+      </div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="addItem()">✚ Add Item</button>
+  `);
+}
+
+function previewUrdu(val) {
+  const hint = document.getElementById('urdu-hint');
+  const urduInput = document.getElementById('item-urdu-input');
+  if (!hint || !urduInput) return;
+  const converted = romanToUrdu(val);
+  if (converted) {
+    hint.textContent = '→ ' + converted;
+    urduInput.value = converted;
+  } else {
+    hint.textContent = '';
+    urduInput.value = val;
+  }
+}
+
+function addItem() {
+  const nameInput = document.getElementById('item-name-input');
+  const urduInput = document.getElementById('item-urdu-input');
+  const rateInput = document.getElementById('item-rate-input');
+  const finalName = (urduInput.value || nameInput.value).trim();
+  const rate = parseFloat(rateInput.value);
+  if (!finalName) { alert('Item name is required.'); return; }
+  if (isNaN(rate) || rate < 0) { alert('Please enter a valid rate.'); return; }
+  state.items.push({ id: getNextItemId(), name: finalName, rate });
+  save();
+  closeModal();
+  renderPage();
+}
+
+function showEditItemModal(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  openModal('Edit Item', `
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="form-group">
+        <label>Item Name <span style="color:var(--text3);font-weight:400;">(Type new Roman Urdu or leave blank)</span></label>
+        <input type="text" id="item-name-input" placeholder="e.g. thaal, dish…" oninput="previewUrdu(this.value)">
+        <div id="urdu-hint" style="font-family:'Noto Nastaliq Urdu',sans-serif;direction:rtl;color:var(--accent);font-size:14px;margin-top:4px;min-height:20px;"></div>
+      </div>
+      <div class="form-group">
+        <label>Saved Name (Urdu) *</label>
+        <input type="text" id="item-urdu-input" value="${esc(item.name)}" style="direction:rtl;font-family:'Noto Nastaliq Urdu',sans-serif;font-size:15px;">
+      </div>
+      <div class="form-group">
+        <label>Rate (Rs./unit) *</label>
+        <input type="number" id="item-rate-input" value="${item.rate}" min="0">
+      </div>
+    </div>
+  `, `
+    <button class="btn" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="updateItem(${id})">✔ Save Changes</button>
+  `);
+}
+
+function updateItem(id) {
+  const urduInput = document.getElementById('item-urdu-input');
+  const nameInput = document.getElementById('item-name-input');
+  const rateInput = document.getElementById('item-rate-input');
+  const finalName = (urduInput.value || nameInput.value).trim();
+  const rate = parseFloat(rateInput.value);
+  if (!finalName) { alert('Item name is required.'); return; }
+  if (isNaN(rate) || rate < 0) { alert('Please enter a valid rate.'); return; }
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  item.name = finalName;
+  item.rate = rate;
+  save();
+  closeModal();
+  renderPage();
+}
+
+function deleteItem(id) {
+  if (!confirm('Delete this item?')) return;
+  state.items = state.items.filter(i => i.id !== id);
+  save();
+  renderPage();
+}
+
+// ─── VIEW BILL (INVOICE MODAL) ───
+function viewBill(id) {
+  const b = state.bills.find(x => x.id === id);
+  if (!b) return;
+  const total = billTotal(b.items);
+  const adv = b.advance || 0;
+  const rem = remaining(b.items, adv);
+
+  const body = `
+    <div class="inv-header">
+      <div class="left">
+        <div class="biz">MALIK DECORATION SERVICE</div>
+        <div class="addr">13/1 Sector 5G, Saeedabad Baldia Town, Karachi</div>
+      </div>
+      <div class="right">
+        <div class="inv-lbl">INVOICE</div>
+        <div class="inv-meta">${billId(b.id)}</div>
+        <div class="inv-meta">${fmtDate(b.date) || '—'}</div>
+      </div>
+    </div>
+    <div class="inv-meta-grid">
+      <div class="inv-meta-cell">
+        <div class="inv-meta-label">Bill Number</div>
+        <div class="inv-meta-value">${billId(b.id)}</div>
+      </div>
+      <div class="inv-meta-cell">
+        <div class="inv-meta-label">Customer</div>
+        <div class="inv-meta-value">${esc(b.customer)}</div>
+      </div>
+      <div class="inv-meta-cell">
+        <div class="inv-meta-label">Phone</div>
+        <div class="inv-meta-value">${esc(b.phone || '—')}</div>
+      </div>
+      <div class="inv-meta-cell">
+        <div class="inv-meta-label">Event</div>
+        <div class="inv-meta-value">${esc(b.event || '—')} ${b.date ? '· ' + fmtDate(b.date) : ''}</div>
+      </div>
+    </div>
+    <div class="inv-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Item</th>
+            <th>Rate</th>
+            <th>Qty</th>
+            <th style="text-align:right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${b.items.map((it, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td class="urdu">${esc(it.name)}</td>
+              <td>${formatPKR(it.rate)}</td>
+              <td>${it.qty}</td>
+              <td style="text-align:right;font-weight:600;">${formatPKR(it.qty * it.rate)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="inv-totals">
+      <div class="inv-total-row">
+        <span class="lbl">Sub Total</span>
+        <span class="val">${formatPKR(total)}</span>
+      </div>
+      <div class="inv-total-row advance">
+        <span class="lbl">Advance Paid</span>
+        <span class="val">− ${formatPKR(adv)}</span>
+      </div>
+      <div class="inv-total-row grand divider">
+        <span class="lbl">TOTAL</span>
+        <span class="val">${formatPKR(total)}</span>
+      </div>
+      <div class="inv-total-row remaining">
+        <span class="lbl">Remaining</span>
+        <span class="val">${formatPKR(rem)}</span>
+      </div>
+    </div>
+    <div class="inv-footer-note">
+      Thank you for choosing Malik Decoration Service · Karachi · 13/1 Sector 5G, Saeedabad Baldia Town
+    </div>
+  `;
+
+  const footer = `
+    <button class="btn" onclick="closeModal()">Close</button>
+    <button class="btn btn-warning" onclick="closeModal();editBill(${id})">✏ Edit Bill</button>
+    <button class="btn btn-info" onclick="printInvoice()">🖨 Print</button>
+    <button class="btn btn-primary" onclick="generatePDF(${id})">⬇ Download PDF</button>
+  `;
+
+  openModal(`Invoice — ${billId(b.id)}`, body, footer);
+}
+
+function printInvoice() {
+  window.print();
+}
+
+// ─── PDF GENERATION ───
+function generatePDF(id) {
+  const b = state.bills.find(x => x.id === id);
+  if (!b) return;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const W = 210, mg = 14, boxW = W - mg * 2;
+
+  // Header background
+  doc.setFillColor(26, 25, 22);
+  doc.rect(0, 0, W, 52, 'F');
+
+  // Gold accent line
+  doc.setFillColor(193, 127, 58);
+  doc.rect(0, 52, W, 2.5, 'F');
+
+  // Business name
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(193, 127, 58);
+  doc.text('MALIK DECORATION SERVICE', mg, 18);
+
+  // Address
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(155, 153, 143);
+  doc.text('13/1 Sector 5G, Saeedabad Baldia Town, Karachi', mg, 25);
+
+  // INVOICE label
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(26);
+  doc.setTextColor(80, 78, 75);
+  doc.text('INVOICE', W - mg, 18, { align: 'right' });
+
+  // Bill ID and date
+  doc.setFontSize(9);
+  doc.setTextColor(155, 153, 143);
+  doc.text(billId(b.id), W - mg, 29, { align: 'right' });
+  doc.text(fmtDate(b.date) || '—', W - mg, 35, { align: 'right' });
+
+  // Customer info box
+  const ciy = 62;
+  doc.setFillColor(249, 248, 245);
+  doc.setDrawColor(210, 208, 200);
+  doc.rect(mg, ciy, boxW, 30, 'FD');
+
+  // Dividers inside customer box
+  doc.line(mg + boxW / 2, ciy, mg + boxW / 2, ciy + 30);
+  doc.line(mg, ciy + 15, mg + boxW, ciy + 15);
+
+  const labels = ['CUSTOMER', 'PHONE', 'EVENT', 'DATE'];
+  const values = [b.customer, b.phone || '—', b.event || '—', fmtDate(b.date) || '—'];
+  const cols = [mg + 4, mg + boxW / 2 + 4];
+  const rows = [ciy, ciy + 15];
+
+  [0, 1, 2, 3].forEach(i => {
+    const cx = cols[i % 2];
+    const ry = rows[Math.floor(i / 2)];
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(155, 153, 143);
+    doc.text(labels[i], cx, ry + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(26, 25, 22);
+    doc.text(String(values[i] || '—'), cx, ry + 11);
+  });
+
+  // Items table
+  const tableRows = b.items.map((it, i) => [
+    i + 1,
+    it.name,
+    'Rs. ' + it.rate,
+    it.qty,
+    'Rs. ' + (it.qty * it.rate).toLocaleString()
+  ]);
+
+  doc.autoTable({
+    startY: 100,
+    head: [['#', 'Item', 'Rate', 'Qty', 'Amount']],
+    body: tableRows,
+    margin: { left: mg, right: mg },
+    headStyles: {
+      fillColor: [26, 25, 22],
+      textColor: [220, 218, 210],
+      fontSize: 9,
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: { fillColor: [249, 248, 245] },
+    columnStyles: {
+      0: { cellWidth: 12 },
+      4: { halign: 'right', fontStyle: 'bold' }
+    },
+    styles: { fontSize: 10, cellPadding: 4 }
+  });
+
+  // Totals box
+  const totalY = doc.lastAutoTable.finalY + 6;
+  const total = billTotal(b.items);
+  const adv = b.advance || 0;
+  const rem = remaining(b.items, adv);
+  const boxH = 52;
+  const valX = mg + boxW - 6;
+  const lblX = mg + 6;
+
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(210, 208, 200);
+  doc.rect(mg, totalY, boxW, boxH, 'FD');
+
+  // Row 1: Sub Total
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(107, 104, 96);
+  doc.text('Sub Total:', lblX, totalY + 11);
+  doc.setTextColor(26, 25, 22);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Rs. ' + total.toLocaleString(), valX, totalY + 11, { align: 'right' });
+
+  // Row 2: Advance
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(107, 104, 96);
+  doc.text('Advance Paid:', lblX, totalY + 22);
+  doc.setTextColor(46, 125, 50);
+  doc.setFont('helvetica', 'bold');
+  doc.text('- Rs. ' + adv.toLocaleString(), valX, totalY + 22, { align: 'right' });
+
+  // Divider
+  doc.setDrawColor(208, 206, 196);
+  doc.line(mg + 4, totalY + 28, mg + boxW - 4, totalY + 28);
+
+  // Row 3: TOTAL
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(26, 25, 22);
+  doc.text('TOTAL:', lblX, totalY + 37);
+  doc.text('Rs. ' + total.toLocaleString(), valX, totalY + 37, { align: 'right' });
+
+  // Row 4: Remaining
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(192, 57, 43);
+  doc.text('Remaining:', lblX, totalY + 48);
+  doc.text('Rs. ' + rem.toLocaleString(), valX, totalY + 48, { align: 'right' });
+
+  // Footer
+  const footY = 277;
+  doc.setFillColor(249, 248, 245);
+  doc.rect(0, footY, W, 20, 'F');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(155, 153, 143);
+  doc.text('Thank you for choosing Malik Decoration Service', W / 2, footY + 8, { align: 'center' });
+  doc.text('Karachi · 13/1 Sector 5G, Saeedabad Baldia Town', W / 2, footY + 14, { align: 'center' });
+
+  const filename = `Invoice-${billId(b.id)}-${b.customer.replace(/\s+/g, '-')}.pdf`;
+  doc.save(filename);
+}
+
+// ─── MODAL ───
+function openModal(title, body, footer) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-footer').innerHTML = footer || '';
+  document.getElementById('modal-backdrop').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function handleBackdropClick(e) {
+  if (e.target === document.getElementById('modal-backdrop')) closeModal();
+}
+
+// ─── ESCAPE HTML ───
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ─── INIT ───
+load();
+renderAll();
+</script>
+</body>
+</html>
